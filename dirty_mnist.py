@@ -290,11 +290,12 @@ class ModelTraining:
 
 train_obj = ModelTraining(Resnet18(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
 train_obj2 = ModelTraining(Resnet101(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
+train_obj3 = ModelTraining(Resnet34(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
 
-train_loss_list, train_acc_list, dev_loss_list, dev_acc_list = train_obj.train(20, 1e-4)
+train_loss_list, train_acc_list, dev_loss_list, dev_acc_list = train_obj3.train(20, 1e-4)
 
 # del train_loader
 # torch.cuda.empty_cache()
 
-train_obj.save_graph(train_loss_list, dev_loss_list, 'loss', 'dev loss', 'Resnet18')
-train_obj.save_graph(train_acc_list, dev_acc_list, 'accuracy', 'dev accuracy', 'Resnet18')
+train_obj3.save_graph(train_loss_list, dev_loss_list, 'loss', 'dev loss', 'Resnet34')
+train_obj3.save_graph(train_acc_list, dev_acc_list, 'accuracy', 'dev accuracy', 'Resnet34')
