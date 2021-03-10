@@ -72,13 +72,27 @@ transforms_test = transforms.Compose([
 
 try:
     targets = pd.read_csv('../dirty-mnist-data/dirty_mnist_2nd_answer.csv', dtype=np.float32)
+    df_train = None 40,000
+    df_train.sample(frac=1.0)
+    # train 0.8 valid 0.2 = 1.0
+    train_index = int(len(df_train) * 0.8)
+
+    df_valid = df_train.iloc[train_index:]
+    df_train = df_train.iloc[:train_index]
+    
+
     targets_numpy = targets.values
     submission = pd.read_csv('../dirty-mnist-data/sample_submission.csv', dtype=np.float32)
     submission_numpy = submission.values
 
-    train_target, test_target = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
-        random_state=42)
-    train_target, dev_target = train_test_split(train_target, test_size=0.1, shuffle=True,
+    # 0.8
+    # train_target, test_target = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
+    #     random_state=42)
+    #     0.7
+    # train_target, dev_target = train_test_split(train_target, test_size=0.1, shuffle=True,
+    #     random_state=42)
+
+    X_train, X_test, y_train, y_test = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
         random_state=42)
 
     print('train_target.shape =', train_target.shape)
@@ -292,10 +306,14 @@ train_obj = ModelTraining(Resnet18(), train_loader, dev_loader, test_loader, sub
 train_obj2 = ModelTraining(Resnet101(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
 train_obj3 = ModelTraining(Resnet34(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
 
-train_loss_list, train_acc_list, dev_loss_list, dev_acc_list = train_obj3.train(20, 1e-4)
+train_loss_list, train_acc_list, dev_loss_list, dev_acc_list = train_obj3.train(100, 1e-4)
 
 # del train_loader
 # torch.cuda.empty_cache()
 
 train_obj3.save_graph(train_loss_list, dev_loss_list, 'loss', 'dev loss', 'Resnet34')
 train_obj3.save_graph(train_acc_list, dev_acc_list, 'accuracy', 'dev accuracy', 'Resnet34')
+
+
+# epoch 1 train loss 0.45, acc = 0.45
+# epoch 1 valid loss 0.48 acc = 0.48
