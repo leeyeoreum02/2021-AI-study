@@ -1,3 +1,5 @@
+#1
+
 import os
 from typing import Tuple, Sequence, Callable, Union
 import numpy as np
@@ -85,7 +87,6 @@ try:
     submission = pd.read_csv('../dirty-mnist-data/sample_submission.csv', dtype=np.float32)
     submission_numpy = submission.values
 
-    # 0.8
     # train_target, test_target = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
     #     random_state=42)
     #     0.7
