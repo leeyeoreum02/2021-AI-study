@@ -1,21 +1,20 @@
 #1
 
 import os
-from typing import Tuple, Sequence, Callable, Union
+from typing import Tuple, Sequence, Callable, List
 import numpy as np
 import pandas as pd
 from PIL import Image
 from datetime import datetime
 import matplotlib.pyplot as plt
+import csv
 
 import torch
-from torch._C import ListType
 import torch.optim as optim
 from torch import nn, Tensor
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data import random_split
+from torch.utils.data.sampler import SubsetRandomSampler
 from torchsummary import summary
-from sklearn.model_selection import train_test_split
 
 from torchvision import transforms
 from torchvision.models import resnet18, resnet34, resnet50, resnet101
@@ -25,16 +24,18 @@ class MnistDataset(Dataset):
     def __init__(
         self,
         dir: os.PathLike,
-        image_ids: np.ndarray, 
+        image_ids: os.PathLike, 
         transforms: Sequence[Callable]
     ) -> None:
         self.dir = dir
         self.transforms = transforms
 
         self.labels = {}
-        
-        for row in image_ids:
-            self.labels[int(row[0])] = list(map(int, row[1:]))
+        with open(image_ids, 'r') as f:
+            reader = csv.reader(f)
+            next(reader)
+            for row in reader:
+                self.labels[int(row[0])] = list(map(int, row[1:]))
 
         self.image_ids = list(self.labels.keys())
 
@@ -54,17 +55,22 @@ class MnistDataset(Dataset):
         return image, target
 
 
-transforms_train = transforms.Compose([
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        [0.485, 0.456, 0.406],
-        [0.229, 0.224, 0.225]
-    )
-])
+def split_dataset(dataset_size: int, split_rate: float) -> Tuple[List]: 
+    dataset_size = dataset_size
+    split_rate = split_rate
+    indices = list(range(dataset_size))
+    split_indices = int(np.floor(split_rate * dataset_size))
 
-transforms_test = transforms.Compose([
+    np.random.shuffle(indices)
+    test_indices, train_indices = indices[:split_indices], indices[split_indices:]
+    print('len(train_indices) =', len(train_indices), ', len(val_indices) =', len(test_indices))
+    print('type(train_indices) =', type(train_indices), ', type(test_indices) =', type(test_indices))
+
+    return train_indices, test_indices
+
+transforms_train = transforms.Compose([
+    # transforms.RandomHorizontalFlip(p=0.5),
+    # transforms.RandomVerticalFlip(p=0.5),
     transforms.ToTensor(),
     transforms.Normalize(
         [0.485, 0.456, 0.406],
@@ -73,46 +79,34 @@ transforms_test = transforms.Compose([
 ])
 
 try:
-    targets = pd.read_csv('../dirty-mnist-data/dirty_mnist_2nd_answer.csv', dtype=np.float32)
-    df_train = None 40,000
-    df_train.sample(frac=1.0)
-    # train 0.8 valid 0.2 = 1.0
-    train_index = int(len(df_train) * 0.8)
-
-    df_valid = df_train.iloc[train_index:]
-    df_train = df_train.iloc[:train_index]
-    
-
-    targets_numpy = targets.values
-    submission = pd.read_csv('../dirty-mnist-data/sample_submission.csv', dtype=np.float32)
-    submission_numpy = submission.values
-
-    # train_target, test_target = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
-    #     random_state=42)
-    #     0.7
-    # train_target, dev_target = train_test_split(train_target, test_size=0.1, shuffle=True,
-    #     random_state=42)
-
-    X_train, X_test, y_train, y_test = train_test_split(targets_numpy, test_size=0.2, shuffle=True, 
-        random_state=42)
-
-    print('train_target.shape =', train_target.shape)
-    print('dev_target.shape =', dev_target.shape)
-    print('test_target.shape =', test_target.shape)
-    print('submission_numpy.shape =', submission_numpy.shape)
-
-    trainset = MnistDataset('../dirty-mnist-data/dirty-mnist-2nd', train_target, transforms_train)
-    devset = MnistDataset('../dirty-mnist-data/dirty-mnist-2nd', dev_target, transforms_test)
-    testset = MnistDataset('../dirty-mnist-data/dirty-mnist-2nd', test_target, transforms_test)
-    submitset = MnistDataset('../dirty-mnist-data/test-dirty-mnist-2nd', submission_numpy, 
-        transforms_test)
+    trainset = MnistDataset(
+        '../dirty-mnist-data/dirty-mnist-2nd', 
+        '../dirty-mnist-data/dirty_mnist_2nd_answer.csv', 
+        transforms_train)
+    testset = MnistDataset(
+        '../dirty-mnist-data/test-dirty-mnist-2nd',
+        '../dirty-mnist-data/sample_submission.csv',
+        transforms_train
+    )
 except Exception as err:
     print(str(err))
 
-train_loader = DataLoader(trainset, batch_size=32, num_workers=2, shuffle=False)
-dev_loader = DataLoader(devset, batch_size=4, num_workers=1, shuffle=False)
-test_loader = DataLoader(testset, batch_size=8, num_workers=1, shuffle=False)
-submit_loader = DataLoader(submitset, batch_size=8, num_workers=1, shuffle=False)
+train_indices, test_indices = split_dataset(len(trainset), 0.2)
+
+val_split_rate = 0.1
+split_indices = int(np.floor(val_split_rate * len(train_indices)))
+
+val_indices, train_indices = train_indices[:split_indices], train_indices[split_indices:]
+print('len(train_indices) =', len(train_indices), ', len(val_indices) =', len(val_indices))
+
+train_sampler = SubsetRandomSampler(train_indices)
+valid_sampler = SubsetRandomSampler(val_indices)
+test_sampler = SubsetRandomSampler(test_indices)
+
+train_loader = DataLoader(trainset, batch_size=16, sampler=train_sampler, num_workers=2)
+valid_loader = DataLoader(trainset, batch_size=4, sampler=valid_sampler, num_workers=1)
+test_loader = DataLoader(trainset, batch_size=8, sampler=test_sampler, num_workers=1)
+submit_loader = DataLoader(testset, batch_size=8, num_workers=4)
 
 class Resnet18(nn.Module):
     def __init__(self) -> None:
@@ -166,20 +160,18 @@ class Resnet101(nn.Module):
         return x
 
 
-
-
 class ModelTraining:
     def __init__(
         self, 
         model: nn.Sequential, 
         train_loader: DataLoader, 
-        dev_loader: DataLoader,
+        val_loader: DataLoader,
         test_loader: DataLoader, 
         submit_loader: DataLoader,
         device: str = 'cpu'
         ) -> None:
         self.train_loader = train_loader
-        self.dev_loader = dev_loader
+        self.val_loader = val_loader
         self.test_loader = test_loader
         self.submit_loader = submit_loader
         
@@ -227,11 +219,11 @@ class ModelTraining:
 
         submit.to_csv('../dirty-mnist-data/submit.csv', index=False)
 
-    def train(self, num_epochs: float, lr: int) -> Tuple[ListType]:
+    def train(self, num_epochs: float, lr: int) -> Tuple[List]:
         model = self.model
         device = self.device
         train_loader = self.train_loader
-        dev_loader = self.dev_loader
+        val_loader = self.val_loader
         test_loader = self.test_loader
 
         summary(model, input_size=(3, 256, 256))
@@ -241,8 +233,8 @@ class ModelTraining:
         optimizer = self.optimizer
 
         num_epochs = num_epochs
-        train_loss_list, dev_loss_list = [], []
-        train_acc_list, dev_acc_list = [], []
+        train_loss_list, val_loss_list = [], []
+        train_acc_list, val_acc_list = [], []
         model.train()
         start_time = datetime.now()
         print('======================= start training =======================')
@@ -264,14 +256,14 @@ class ModelTraining:
                     acc = (outputs == targets).float().mean() # type(acc): torch.Tensor
                     print(f'epoch: {epoch}, step: {i}, loss: {loss.item():.5f}, acc: {acc.item():.5f}')
 
-            dev_loss, dev_acc = self.predict(dev_loader)
+            val_loss, val_acc = self.predict(val_loader)
 
-            print(f'epoch: {epoch}, dev_loss: {dev_loss.item():.5f}, dev_acc: {dev_acc.item():.5f}')
+            print(f'epoch: {epoch}, val_loss: {val_loss.item():.5f}, val_acc: {val_acc.item():.5f}')
                     
             train_loss_list.append(loss.item())
             train_acc_list.append(acc.item())
-            dev_loss_list.append(dev_loss.item())
-            dev_acc_list.append(dev_acc.item())
+            val_loss_list.append(val_loss.item())
+            val_acc_list.append(val_acc.item())
 
         end_time = datetime.now()
         print('Elasped Time:', end_time - start_time)
@@ -282,14 +274,14 @@ class ModelTraining:
 
         self.submit()
 
-        return train_loss_list, train_acc_list, dev_loss_list, dev_acc_list
+        return train_loss_list, train_acc_list, val_loss_list, val_acc_list
 
     def save_graph(
         self, 
-        data_list: list, 
-        dev_data_list: list, 
+        data_list: List, 
+        val_data_list: List, 
         data_name: str, 
-        dev_data_name: str,
+        val_data_name: str,
         model_name: str
         ) -> None:
         plt.title(data_name.capitalize())
@@ -297,23 +289,23 @@ class ModelTraining:
         plt.ylabel(data_name)
         plt.grid()
         plt.plot(data_list, label=data_name)
-        plt.plot(dev_data_list, label=dev_data_name)
+        plt.plot(val_data_list, label=val_data_name)
         plt.legend(loc='best')
         plt.savefig(f'{model_name}: {data_name}.png')
         plt.show()
         plt.clf()
 
-train_obj = ModelTraining(Resnet18(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
-train_obj2 = ModelTraining(Resnet101(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
-train_obj3 = ModelTraining(Resnet34(), train_loader, dev_loader, test_loader, submit_loader, 'cuda')
+train_obj = ModelTraining(Resnet18(), train_loader, valid_loader, test_loader, submit_loader, 'cuda')
+train_obj2 = ModelTraining(Resnet101(), train_loader, valid_loader, test_loader, submit_loader, 'cuda')
+train_obj3 = ModelTraining(Resnet34(), train_loader, valid_loader, test_loader, submit_loader, 'cuda')
 
-train_loss_list, train_acc_list, dev_loss_list, dev_acc_list = train_obj3.train(100, 1e-4)
+train_loss_list, train_acc_list, val_loss_list, val_acc_list = train_obj2.train(20, 1e-4)
 
 # del train_loader
 # torch.cuda.empty_cache()
 
-train_obj3.save_graph(train_loss_list, dev_loss_list, 'loss', 'dev loss', 'Resnet34')
-train_obj3.save_graph(train_acc_list, dev_acc_list, 'accuracy', 'dev accuracy', 'Resnet34')
+train_obj2.save_graph(train_loss_list, val_loss_list, 'loss', 'val loss', 'Resnet34')
+train_obj2.save_graph(train_acc_list, val_acc_list, 'accuracy', 'val accuracy', 'Resnet34')
 
 
 # epoch 1 train loss 0.45, acc = 0.45
