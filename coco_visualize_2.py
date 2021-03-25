@@ -66,7 +66,7 @@ def draw_masks(
             zip_segs = np.array(zip_segs)
 
             cv2.fillConvexPoly(image, zip_segs, colors[v['category_id']])
-            cv2.addWeighted(image, 1, target, 0.5, 0)
+            # cv2.addWeighted(image, 1, target, 0.5, 0)
             
 
     return image
