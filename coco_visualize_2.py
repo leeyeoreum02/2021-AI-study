@@ -46,8 +46,8 @@ def draw_bbox(
     for v in annotations:
         bbox = v['bbox']
         x, y, w, h = list(map(round, bbox))
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0), 3)
-        cv2.putText(image, v['category_id'], (x - 3, y - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colors[v['category_id']], 2)
+        cv2.rectangle(image, (x, y), (x + w, y + h), colors[v['category_id']], 3)
+        cv2.putText(image, v['category_id'], (x - 3, y - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
     return image
 
