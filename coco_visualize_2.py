@@ -8,7 +8,8 @@ from typing import Dict, Tuple, Any, List, Union
 import numpy as np
 import random
 
-import pycocotools
+from pycocotools import mask
+from skimage import measure
 
 
 class CocoDataset:
@@ -27,7 +28,8 @@ class CocoDataset:
                     'id': v['id'],
                     'category_id': self.categories.get(v['category_id']),
                     'bbox': bbox,
-                    'segmentation': np.array(v['segmentation'], dtype=object)
+                    'segmentation': np.array(v['segmentation'], dtype=object),
+                    'iscrowd': v['iscrowd'],
                 }
             )
     def __getitem__(self, index: int) -> Tuple[str, List[Dict[str, Any]]]:
@@ -60,9 +62,9 @@ def draw_masks(
     colors: Dict[str, Tuple[int]]
     ) -> np.ndarray:
     for v in annotations:
-        print('\nannotations:', annotations)
-        print('\nv:', v)
-        print("\nv['segmentation']:", v['segmentation'])
+        # print('\nannotations:', annotations)
+        # print('\nv:', v)
+        # print("\nv['segmentation']:", v['segmentation'])
         for seg in v['segmentation']:
             x_segs = [round(loc) for i, loc in enumerate(seg)
                         if i % 2 == 0]
@@ -103,9 +105,23 @@ def show_fig_4x4(images: List[np.ndarray], file_names: List[str]) -> None:
     plt.show()
     fig.savefig('coco_random_idx_4x4.png')
 
-def RLE2Polygon(RLE):
-    return
-    
+def RLE2Polygon(segmentation: np.ndarray) -> List[float]:
+    segmentation = segmentation.tolist()
+    compressed_rle = mask.frPyObjects(
+        segmentation, 
+        segmentation.get('size')[0], 
+        segmentation.get('size')[1]
+        )
+    ground_truth_binary_mask = mask.decode(compressed_rle)
+    contours = measure.find_contours(ground_truth_binary_mask, 0.5)
+    segmentations = []
+    for contour in contours:
+        contour = np.flip(contour, axis=1)
+        segmentation = contour.ravel().tolist()
+        segmentations.append(segmentation)
+
+    return segmentations
+        
 
 if __name__ == '__main__':
     coco = CocoDataset('../coco/annotations/instances_train2014.json')
@@ -113,9 +129,22 @@ if __name__ == '__main__':
     num_images = list(range(len(coco)))
     random.shuffle(num_images)
     random_idxs = num_images[:4]
-    print(coco[random_idxs[0]])
-    print(random_idxs)
-    
+
+    for i, idx in enumerate(random_idxs):
+        print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
+        for j, annotation in enumerate(coco[idx][1]):
+            #print('annotation:', annotation)
+            #print('segmenation:', annotation['segmentation'])
+            print('category_id:', annotation['category_id'])
+            print('type of segmentation:', type(annotation['segmentation']))
+            print('type of bbox:', type(annotation['bbox']))
+            print('iscrowd:', annotation['iscrowd'])
+            #print('type of iscrowd:', type(annotation['iscrowd']))
+            print()
+            if annotation['iscrowd'] == 1:
+                coco[idx][1][j]['segmentation'] = RLE2Polygon(annotation['segmentation'])
+                print('new:', coco[idx][1][j]['segmentation'])
+
     image_list = []
     file_names = []
     for idx in random_idxs:
