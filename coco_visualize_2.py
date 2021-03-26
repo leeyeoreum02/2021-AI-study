@@ -6,8 +6,9 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from typing import Dict, Tuple, Any, List, Union
 import numpy as np
-
 import random
+
+import pycocotools
 
 
 class CocoDataset:
@@ -59,9 +60,9 @@ def draw_masks(
     colors: Dict[str, Tuple[int]]
     ) -> np.ndarray:
     for v in annotations:
-        # print('\nannotations:', annotations)
-        # print('\nv', v)
-        # print("\nv['segmentation']:", v['segmentation'])
+        print('\nannotations:', annotations)
+        print('\nv:', v)
+        print("\nv['segmentation']:", v['segmentation'])
         for seg in v['segmentation']:
             x_segs = [round(loc) for i, loc in enumerate(seg)
                         if i % 2 == 0]
@@ -101,6 +102,9 @@ def show_fig_4x4(images: List[np.ndarray], file_names: List[str]) -> None:
     
     plt.show()
     fig.savefig('coco_random_idx_4x4.png')
+
+def RLE2Polygon(RLE):
+    return
     
 
 if __name__ == '__main__':
