@@ -105,7 +105,7 @@ def show_fig_4x4(images: List[np.ndarray], file_names: List[str]) -> None:
     plt.show()
     fig.savefig('coco_random_idx_4x4.png')
 
-def rle2loc(segmentation: np.ndarray) -> List[float]:
+def decode_rle(segmentation: np.ndarray) -> List[float]:
     segmentation = segmentation.tolist()
     compressed_rle = mask.frPyObjects(
         segmentation, 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
             print()
             
             if annotation['iscrowd'] == 1:
-                coco[idx][1][j]['segmentation'] = rle2loc(annotation['segmentation'])
+                coco[idx][1][j]['segmentation'] = decode_rle(annotation['segmentation'])
                 print('new:', coco[idx][1][j]['segmentation'])
 
     image_list = []
