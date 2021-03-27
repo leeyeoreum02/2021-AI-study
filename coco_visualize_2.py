@@ -105,7 +105,7 @@ def show_fig_4x4(images: List[np.ndarray], file_names: List[str]) -> None:
     plt.show()
     fig.savefig('coco_random_idx_4x4.png')
 
-def RLE2Polygon(segmentation: np.ndarray) -> List[float]:
+def rle2loc(segmentation: np.ndarray) -> List[float]:
     segmentation = segmentation.tolist()
     compressed_rle = mask.frPyObjects(
         segmentation, 
@@ -141,8 +141,9 @@ if __name__ == '__main__':
             print('iscrowd:', annotation['iscrowd'])
             #print('type of iscrowd:', type(annotation['iscrowd']))
             print()
+            
             if annotation['iscrowd'] == 1:
-                coco[idx][1][j]['segmentation'] = RLE2Polygon(annotation['segmentation'])
+                coco[idx][1][j]['segmentation'] = rle2loc(annotation['segmentation'])
                 print('new:', coco[idx][1][j]['segmentation'])
 
     image_list = []
@@ -155,11 +156,18 @@ if __name__ == '__main__':
         image_path = os.path.join(root, 'train2014', file_name)
 
         image = cv2.imread(image_path)
-        colors = get_colors(annotations)
-        image = draw_masks(image, annotations, colors)
-        image = draw_bbox(image, annotations, colors)
+        
+        if type(annotations) is None:
+            print('There is a NoneType in annotations')
+            continue
+        else:
+            colors = get_colors(annotations)
+            image = draw_masks(image, annotations, colors)
+            image = draw_bbox(image, annotations, colors)
 
         image_list.append(image)
         file_names.append(file_name)
+        
+        colors = None
 
     show_fig_4x4(image_list, file_names)
