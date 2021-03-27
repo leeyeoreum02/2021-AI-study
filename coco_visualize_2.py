@@ -128,7 +128,14 @@ if __name__ == '__main__':
     
     num_images = list(range(len(coco)))
     random.shuffle(num_images)
-    random_idxs = num_images[:4]
+    
+    random_idxs = []
+    for idx in num_images:
+        if len(random_idxs) == 4:
+            break
+        
+        if coco[idx][1] is not None:
+            random_idxs.append(idx)
 
     for i, idx in enumerate(random_idxs):
         print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
@@ -156,14 +163,9 @@ if __name__ == '__main__':
         image_path = os.path.join(root, 'train2014', file_name)
 
         image = cv2.imread(image_path)
-        
-        if type(annotations) is None:
-            print('There is a NoneType in annotations')
-            continue
-        else:
-            colors = get_colors(annotations)
-            image = draw_masks(image, annotations, colors)
-            image = draw_bbox(image, annotations, colors)
+        colors = get_colors(annotations)
+        image = draw_masks(image, annotations, colors)
+        image = draw_bbox(image, annotations, colors)
 
         image_list.append(image)
         file_names.append(file_name)
