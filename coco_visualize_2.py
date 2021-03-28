@@ -52,7 +52,7 @@ def draw_bbox(
         bbox = v['bbox']
         x, y, w, h = list(map(round, bbox))
         cv2.rectangle(image, (x, y), (x + w, y + h), colors[v['category_id']], 2)
-        cv2.putText(image, v['category_id'], (x + 1, y + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(image, v['category_id'], (x + 1, y + 12), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
     return image
 
@@ -70,11 +70,11 @@ def draw_masks(
                         if i % 2 == 0]
             y_segs = [round(loc) for i, loc in enumerate(seg)
                         if i % 2 != 0]
-            zip_segs = list(zip(x_segs, y_segs))
-            zip_segs = np.array(zip_segs)
+            xy_segs = list(zip(x_segs, y_segs))
+            xy_segs = np.array(xy_segs)
 
-            mask = np.zeros_like(image)
-            mask = cv2.fillPoly(mask, [zip_segs], colors[v['category_id']])
+            blank = np.zeros_like(image)
+            mask = cv2.fillPoly(blank, [zip_segs], colors[v['category_id']])
             image = cv2.addWeighted(image, 1, mask, 0.8, 0)
             
     return image
@@ -91,16 +91,16 @@ def show_fig_1x1(image: np.ndarray, file_name: str) -> None:
 
 def show_fig_4x4(images: List[np.ndarray], file_names: List[str]) -> None:
     fig = plt.figure()
-    rows = 2
-    cols = 2
-    i = 1
+    row = 2
+    col = 2
+    count = 1
 
     for image, file_name in list(zip(images, file_names)):
-        ax = fig.add_subplot(rows, cols, i)
+        ax = fig.add_subplot(row, col, count)
         ax.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         ax.set_title(file_name, fontsize=10)
         ax.axis('off')
-        i += 1
+        count += 1
     
     plt.show()
     fig.savefig('coco_random_idx_4x4.png')
@@ -138,15 +138,15 @@ if __name__ == '__main__':
             random_idxs.append(idx)
 
     for i, idx in enumerate(random_idxs):
-        print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
+        # print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
         for j, annotation in enumerate(coco[idx][1]):
-            #print('annotation:', annotation)
-            #print('segmenation:', annotation['segmentation'])
+            # print('annotation:', annotation)
+            # print('segmenation:', annotation['segmentation'])
             print('category_id:', annotation['category_id'])
             print('type of segmentation:', type(annotation['segmentation']))
             print('type of bbox:', type(annotation['bbox']))
             print('iscrowd:', annotation['iscrowd'])
-            #print('type of iscrowd:', type(annotation['iscrowd']))
+            # print('type of iscrowd:', type(annotation['iscrowd']))
             print()
             
             if annotation['iscrowd'] == 1:
