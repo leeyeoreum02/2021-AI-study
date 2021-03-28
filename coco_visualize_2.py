@@ -73,8 +73,8 @@ def draw_masks(
             xy_segs = list(zip(x_segs, y_segs))
             xy_segs = np.array(xy_segs)
 
-            blank = np.zeros_like(image)
-            mask = cv2.fillPoly(blank, [zip_segs], colors[v['category_id']])
+            empty = np.zeros_like(image)
+            mask = cv2.fillPoly(empty, [zip_segs], colors[v['category_id']])
             image = cv2.addWeighted(image, 1, mask, 0.8, 0)
             
     return image
