@@ -52,7 +52,7 @@ def draw_bbox(
         bbox = v['bbox']
         x, y, w, h = list(map(round, bbox))
         cv2.rectangle(image, (x, y), (x + w, y + h), colors[v['category_id']], 2)
-        cv2.putText(image, v['category_id'], (x + 1, y + 12), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+        cv2.putText(image, v['category_id'], (x + 2, y + 24), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
     return image
 
@@ -74,7 +74,7 @@ def draw_masks(
             xy_segs = np.array(xy_segs)
 
             empty = np.zeros_like(image)
-            mask = cv2.fillPoly(empty, [zip_segs], colors[v['category_id']])
+            mask = cv2.fillPoly(empty, [xy_segs], colors[v['category_id']])
             image = cv2.addWeighted(image, 1, mask, 0.8, 0)
             
     return image
@@ -138,7 +138,7 @@ if __name__ == '__main__':
             random_idxs.append(idx)
 
     for i, idx in enumerate(random_idxs):
-        # print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
+        print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
         for j, annotation in enumerate(coco[idx][1]):
             # print('annotation:', annotation)
             # print('segmenation:', annotation['segmentation'])
@@ -152,6 +152,7 @@ if __name__ == '__main__':
             if annotation['iscrowd'] == 1:
                 coco[idx][1][j]['segmentation'] = decode_rle(annotation['segmentation'])
                 print('new:', coco[idx][1][j]['segmentation'])
+                print()
 
     image_list = []
     file_names = []
