@@ -62,9 +62,6 @@ def draw_masks(
     colors: Dict[str, Tuple[int]]
     ) -> np.ndarray:
     for v in annotations:
-        # print('\nannotations:', annotations)
-        # print('\nv:', v)
-        # print("\nv['segmentation']:", v['segmentation'])
         for seg in v['segmentation']:
             x_segs = [round(loc) for i, loc in enumerate(seg)
                         if i % 2 == 0]
@@ -140,13 +137,10 @@ if __name__ == '__main__':
     for i, idx in enumerate(random_idxs):
         print(f'{i + 1}. type of annotations:', type(coco[idx][1]))
         for j, annotation in enumerate(coco[idx][1]):
-            # print('annotation:', annotation)
-            # print('segmenation:', annotation['segmentation'])
             print('category_id:', annotation['category_id'])
             print('type of segmentation:', type(annotation['segmentation']))
             print('type of bbox:', type(annotation['bbox']))
             print('iscrowd:', annotation['iscrowd'])
-            # print('type of iscrowd:', type(annotation['iscrowd']))
             print()
             
             if annotation['iscrowd'] == 1:
