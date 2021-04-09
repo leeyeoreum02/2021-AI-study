@@ -32,6 +32,7 @@ class CocoDataset:
                     'iscrowd': v['iscrowd'],
                 }
             )
+            
     def __getitem__(self, index: int) -> Tuple[str, List[Dict[str, Any]]]:
         values = self.images[index]
         annotations = self.annotations.get(values['id'])
